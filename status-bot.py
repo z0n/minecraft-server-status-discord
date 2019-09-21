@@ -64,7 +64,7 @@ async def on_ready():
                     # favicon = server_status.favicon
                     num_players = server_query.players.online
                     max_players = server_query.players.max
-                    player_names = str(server_query.players.names).join("\n")
+                    player_names = str("\n").join(server_query.players.names)
                     # :TODO: Handle all crazy types of MOTD.
                     # motd = server_query.motd
                     version = server_query.software.version
