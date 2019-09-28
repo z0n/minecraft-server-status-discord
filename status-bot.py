@@ -88,7 +88,7 @@ async def on_ready():
             embed.set_author(name=server_address)
             try:
                 await status_message[server_address].edit(embed=embed)
-            except KeyError:
+            except (KeyError, discord.NotFound):
                 status_message[server_address] = await channel.send(embed=embed)
         await asyncio.sleep(CHECK_INTERVAL)
 
