@@ -23,8 +23,8 @@ async def on_ready():
     channel = client.get_channel(DISCORD_CHANNEL_ID)
     print(
         f"{client.user} is connected to the following server:\n"
-        f"{guild.name}(id: {guild.id})\n"
-        f"Posting messages to channel {channel.name}"
+        f"'{guild.name}' (id: {guild.id})\n"
+        f"Posting messages to channel '{channel.name}'"
     )
 
     # Delete all messages of the bot from the channel:
@@ -33,7 +33,7 @@ async def on_ready():
             await message.delete()
 
     # Main loop for updating the status:
-    while not client.is_closed():
+    while True:
         for server_address in MINECRAFT_SERVERS:
             server = MinecraftServer.lookup(server_address)
             # favicon = None
@@ -64,7 +64,9 @@ async def on_ready():
                     # favicon = server_status.favicon
                     num_players = server_query.players.online
                     max_players = server_query.players.max
-                    player_names = str("\n").join(server_query.players.names)
+                    player_names_list = server_query.players.names
+                    player_names_list.sort()
+                    player_names = str("\n").join(player_names_list)
                     # :TODO: Handle all crazy types of MOTD.
                     # motd = server_query.motd
                     version = server_query.software.version
@@ -85,6 +87,15 @@ async def on_ready():
             embed = discord.Embed()
             embed.colour = online_color
             embed.description = f"**Status:** {online_status}\n\n**Version:** {version}\n**Ping:** {ping}\n**Players connected:** {num_players}/{max_players}\n\n{player_names}"
+            # Max length for descriptions is 2048
+            if len(embed.description) > 2048:
+                # Remove player names from the list until we're under the limit (and add "..." at the bottom):
+                while len(embed.description) > 2043:
+                    player_names_list = player_names.split("\n")
+                    player_names_list.sort()
+                    player_names_list.pop()
+                    player_names = player_names = str("\n").join(player_names_list)
+                    embed.description = f"**Status:** {online_status}\n\n**Version:** {version}\n**Ping:** {ping}\n**Players connected:** {num_players}/{max_players}\n```{player_names}\n...```"
             embed.set_author(name=server_address)
             try:
                 await status_message[server_address].edit(embed=embed)
@@ -92,4 +103,8 @@ async def on_ready():
                 status_message[server_address] = await channel.send(embed=embed)
         await asyncio.sleep(CHECK_INTERVAL)
 
-client.run(DISCORD_TOKEN)
+@client.event
+async def on_disconnect():
+    print("Disconnected...")
+
+client.run(DISCORD_TOKEN, reconnect=True)
